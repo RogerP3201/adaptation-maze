@@ -25,10 +25,10 @@ canvas{width:100%;background:#0b1017;border:1px solid var(--line);border-radius:
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:220px;margin:8px auto 0}
 .pad button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:14px 0;font-size:1.1rem;font-weight:900;cursor:pointer}
 .pad .sp{visibility:hidden}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px;font-size:.9rem;line-height:1.7}
-.card h2{font-size:1.05rem;margin-bottom:6px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px;font-size:1rem;line-height:1.75}
+.card h2{font-size:1.18rem;margin-bottom:8px}
 .card p{color:#c3cfda}
-.list{margin-top:8px;font-size:.84rem;color:var(--dim);line-height:1.9}
+.list{margin-top:10px;font-size:.98rem;color:#b9c7d6;line-height:2}
 .k{color:var(--ok);font-weight:700}
 .r{color:var(--no);font-weight:700}
 button.go{width:100%;background:var(--blue);color:#06202b;border:0;border-radius:10px;padding:13px;font:inherit;font-weight:900;cursor:pointer;margin-top:10px}
@@ -307,9 +307,11 @@ function draw(){
     ctx.font=`${CELL*0.42}px system-ui,"Segoe UI Emoji","Noto Color Emoji"`;
     ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText(g.ico, x, y+bob-1);
-    ctx.font="bold 8.5px 'Microsoft JhengHei',sans-serif";
-    ctx.fillStyle="#7fe0a6";
-    ctx.fillText(g.n, x, y+CELL*0.52+bob);
+    ctx.font="bold 12px 'Microsoft JhengHei',sans-serif";
+    ctx.lineWidth=3; ctx.strokeStyle="rgba(11,16,23,.9)";
+    ctx.strokeText(g.n, x, y+CELL*0.58+bob);
+    ctx.fillStyle="#9bf0bd";
+    ctx.fillText(g.n, x, y+CELL*0.58+bob);
   });
 
   // 風險（圖示＋名稱）
@@ -323,9 +325,11 @@ function draw(){
     ctx.font=`${CELL*0.4}px system-ui,"Segoe UI Emoji","Noto Color Emoji"`;
     ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText(x.ico, gx, gy+wob-1);
-    ctx.font="bold 8.5px 'Microsoft JhengHei',sans-serif";
-    ctx.fillStyle="#f4a3a3";
-    ctx.fillText(x.n, gx, gy+CELL*0.54+wob);
+    ctx.font="bold 12px 'Microsoft JhengHei',sans-serif";
+    ctx.lineWidth=3; ctx.strokeStyle="rgba(11,16,23,.9)";
+    ctx.strokeText(x.n, gx, gy+CELL*0.6+wob);
+    ctx.fillStyle="#ffb3b3";
+    ctx.fillText(x.n, gx, gy+CELL*0.6+wob);
   });
 
   // 老師（張嘴動畫）
