@@ -353,4 +353,68 @@ function draw(){
 function roundRect(x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+/* ---------- 結算 ---------- */
+function finish(reason){
+  if(!running) return;
+  running=false; clearInterval(window._clock);
+  score += Math.round(part*4 + energy*1.5 + Math.max(0,timeLeft)*3);
+  document.getElementById("game").classList.add("hide");
+  document.getElementById("end").classList.remove("hide");
+  const t=document.getElementById("endTitle"), b=document.getElementById("endBody");
+  if(deployed>=6){
+    t.textContent="六項調整全部落地";
+    b.innerHTML=`全班參與度 <b class="k">${Math.round(part)}</b>，你的能量還剩 ${Math.round(energy)}。<br>
+      注意你做的事：這六項沒有一項是為某一個學生特製的，它們是<b>整班都能用的設計</b>。這就是調整與特例的差別。`;
+  } else if(reason==="這一班散掉了"){
+    t.textContent="這一班散掉了";
+    b.innerHTML=`你部署了 ${deployed} 項調整，但一路上踩到太多次做壞的做法。<br>
+      參與度不是被學生的能力拉低的，是被那幾個決定拉低的。`;
+  } else if(reason==="你撐不住了"){
+    t.textContent="你撐不住了";
+    b.innerHTML=`你部署了 ${deployed} 項調整，能量在中途歸零。<br>
+      一個人扛整班是撐不久的。注意「同儕小老師」那一項：它是唯一會替你分擔的調整。`;
+  } else {
+    t.textContent="下課鐘響了";
+    b.innerHTML=`你部署了 <b>${deployed}</b> 項調整，全班參與度 <b>${Math.round(part)}</b>。<br>
+      沒部署完不是失敗。真實的體育課本來就是一節一節慢慢改的。`;
+  }
+  const uniq=a=>[...new Map(a.map(x=>[x.n,x])).values()];
+  const gl=uniq(logGood).map(g=>`<b class="k">${g.n}</b>：${g.why}`).join("<br>");
+  const rl=uniq(logRisk).map(x=>`<b class="r">${x.n}</b>：${x.why}`).join("<br>");
+  document.getElementById("endList").innerHTML=
+    (gl?"你部署的調整：<br>"+gl:"") + (rl?"<br><br>你踩到的做法：<br>"+rl:"");
+  document.getElementById("shareText").textContent=
+`我當了一節課的體育老師。
+部署了 ${deployed} 項調整，全班參與度 ${Math.round(part)}／100，分數 ${Math.round(score)}。
+
+要收集的是：視覺提示、分層挑戰站、同儕小老師、替代器材、多元評量、可選擇的規則。
+要繞開的是：把他排除在外、幫他做完所有事、當眾標記他、齊頭式的公平、臨時抓一個人跟課。
+
+調整不是特例，是整班都能用的設計。`;
+}
+function copyShare(){
+  navigator.clipboard.writeText(document.getElementById("shareText").textContent).then(()=>alert("已複製。"));
+}
+addEventListener("keydown", e=>{
+  const k=e.key.toLowerCase();
+  if(["arrowup","w"].includes(k)) setDir(0,-1);
+  else if(["arrowdown","s"].includes(k)) setDir(0,1);
+  else if(["arrowleft","a"].includes(k)) setDir(-1,0);
+  else if(["arrowright","d"].includes(k)) setDir(1,0);
+  else return;
+  e.preventDefault();
+});
+let tx=0,ty=0;
+cv.addEventListener("touchstart",e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+cv.addEventListener("touchmove",e=>{
+  const dx=e.touches[0].clientX-tx, dy=e.touches[0].clientY-ty;
+  if(Math.hypot(dx,dy)<22) return;
+  if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?1:-1,0); else setDir(0, dy>0?1:-1);
+  tx=e.touches[0].clientX; ty=e.touches[0].clientY;
+},{passive:true});
+</script>
+</body>
+</html>
