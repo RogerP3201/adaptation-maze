@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>調整補給站｜一節課的體育老師</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0d1117;--panel:#161d27;--line:#243040;--ink:#e8eef4;--dim:#8497a8;--ok:#4ade80;--warn:#fbbf24;--no:#f87171;--blue:#38bdf8}
+body{font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;justify-content:center;padding:14px 10px 30px}
+.wrap{width:100%;max-width:560px}
+h1{font-size:1.25rem;font-weight:900;letter-spacing:.03em}
+.tag{color:var(--dim);font-size:.82rem;margin-bottom:12px}
+.hud{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.meter{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.meter .t{display:flex;justify-content:space-between;font-size:.76rem;color:var(--dim);margin-bottom:5px}
+.track{height:9px;background:#0b1017;border-radius:99px;overflow:hidden}
+.fill{height:100%;transition:width .18s linear}
+.topbar{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:var(--dim);margin-bottom:8px}
+.topbar b{color:var(--ink);font-size:1rem}
+canvas{width:100%;background:#0b1017;border:1px solid var(--line);border-radius:12px;display:block;touch-action:none}
+.bag{display:flex;gap:6px;margin:10px 0 6px}
+.slot{flex:1;text-align:center;border:1px dashed var(--line);border-radius:8px;padding:6px 4px;font-size:.74rem;color:var(--dim)}
+.slot.full{border-style:solid;border-color:#2b6f5a;background:#12241d;color:var(--ok)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:220px;margin:8px auto 0}
+.pad button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:14px 0;font-size:1.1rem;font-weight:900;cursor:pointer}
+.pad .sp{visibility:hidden}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px;font-size:.9rem;line-height:1.7}
+.card h2{font-size:1.05rem;margin-bottom:6px}
+.card p{color:#c3cfda}
+.list{margin-top:8px;font-size:.84rem;color:var(--dim);line-height:1.9}
+.k{color:var(--ok);font-weight:700}
+.r{color:var(--no);font-weight:700}
+button.go{width:100%;background:var(--blue);color:#06202b;border:0;border-radius:10px;padding:13px;font:inherit;font-weight:900;cursor:pointer;margin-top:10px}
+button.ghost{width:100%;background:none;border:1px solid var(--line);color:var(--dim);border-radius:10px;padding:11px;font:inherit;cursor:pointer;margin-top:8px}
+.msg{text-align:center;font-size:.85rem;color:var(--warn);min-height:22px;margin-top:4px}
+.hide{display:none}
+.foot{color:var(--dim);font-size:.74rem;margin-top:18px;line-height:1.8;text-align:center}
+.share{background:#0b1017;border:1px dashed var(--line);border-radius:10px;padding:12px;font-size:.84rem;color:#c3cfda;white-space:pre-wrap;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>調整補給站</h1>
+  <div class="tag">你是體育老師。一節課，把調整帶回課堂。</div>
+
+  <div id="intro" class="card">
+    <h2>怎麼玩</h2>
+    <p>校園裡散落著六種<b class="k">調整策略</b>（綠色）。走過去撿起來，最多同時帶三個，要走回<b>中央的體育課</b>才算部署成功。</p>
+    <p style="margin-top:8px">五種<b class="r">做壞的做法</b>（紅色）在校園裡遊走。它們不能撿，碰到會拉低全班參與度，也耗掉你的力氣。看到就繞開。</p>
+    <div class="list">
+      <b class="k">要收集</b>：視覺提示卡、分層挑戰站、同儕小老師、替代器材、多元評量、可選擇的規則<br>
+      <b class="r">要繞開</b>：把他排除在外、幫他做完所有事、當眾標記他、齊頭式的公平、臨時抓一個人跟課
+    </div>
+    <p style="margin-top:10px;color:var(--dim);font-size:.82rem">方向鍵或 WASD 連續移動，手機可滑動或用下方方向鍵。角色會一直走，轉彎在路口生效。</p>
+    <button class="go" onclick="startGame()">上課了</button>
+  </div>
+
+  <div id="game" class="hide">
+    <div class="topbar">
+      <div>剩餘 <b id="time">45</b> 分鐘</div>
+      <div>已部署 <b id="deployed">0</b> / 6</div>
+      <div>分數 <b id="score">0</b></div>
+    </div>
+    <div class="hud">
+      <div class="meter">
+        <div class="t"><span>全班參與度</span><span id="pTxt">60</span></div>
+        <div class="track"><div class="fill" id="pBar" style="width:60%;background:var(--ok)"></div></div>
+      </div>
+      <div class="meter">
+        <div class="t"><span>教師能量</span><span id="eTxt">100</span></div>
+        <div class="track"><div class="fill" id="eBar" style="width:100%;background:var(--blue)"></div></div>
+      </div>
+    </div>
+    <canvas id="cv" width="560" height="600"></canvas>
+    <div class="bag" id="bag"></div>
+    <div class="msg" id="msg"></div>
+    <div class="pad">
+      <button class="sp"></button><button onclick="setDir(0,-1)">↑</button><button class="sp"></button>
+      <button onclick="setDir(-1,0)">←</button><button onclick="setDir(0,1)">↓</button><button onclick="setDir(1,0)">→</button>
+    </div>
+  </div>
+
+  <div id="end" class="hide">
+    <div class="card">
+      <h2 id="endTitle"></h2>
+      <p id="endBody"></p>
+      <div class="list" id="endList"></div>
+      <div class="share" id="shareText"></div>
+      <button class="ghost" onclick="copyShare()">複製這段文字</button>
+      <button class="go" onclick="location.reload()">再上一次課</button>
+    </div>
+  </div>
+
+  <div class="foot">
+    教學用遊戲，不是評量，不會收集任何資料。<br>
+    潘正宸　臺灣師範大學體育與運動科學系｜CC BY-NC-ND 4.0
+  </div>
+</div>
+
+<script>
+const GOODS = [
+  {n:"視覺提示卡",   ico:"🪧", why:"把口說的規則變成看得見的步驟。聽不清楚、聽不懂、分心的人，都因此接得住。"},
+  {n:"分層挑戰站",   ico:"🪜", why:"同一個動作三種難度，讓每個人都有一個跳得到、但要跳一下的高度。"},
+  {n:"同儕小老師",   ico:"🤝", why:"協助不是代勞。同學陪練，比助理員站在旁邊更接近真正的參與。"},
+  {n:"替代器材",     ico:"🏐", why:"輕球、加粗握把、彈性帶。換器材不是降低標準，是讓他握得住。"},
+  {n:"多元評量",     ico:"📋", why:"進步不是只有一種算法。過程、策略、合作，都可以被看見。"},
+  {n:"可選擇的規則", ico:"🔀", why:"讓全班都能選，而不是為某一個人破例。這一條讓調整不再是標記。"}
+];
+const RISKS = [
+  {n:"把他排除在外",     ico:"🚷", why:"「你今天先在旁邊看。」一節課四十五分鐘，他一次都沒有動到。"},
+  {n:"幫他做完所有事",   ico:"🤲", why:"過度協助會讓學會的機會消失。你幫他贏的那一球，不是他的球。"},
+  {n:"當眾標記他",       ico:"📢", why:"「大家看，他今天要用特別的球。」調整一旦被公開展示，就變成標記。"},
+  {n:"齊頭式的公平",     ico:"📏", why:"全班同一個標準、同一種做法，看起來公平，實際上是把人篩掉。"},
+  {n:"臨時抓一個人跟課", ico:"⏰", why:"沒有事前資訊、沒有事前準備，跟課的人只能站著看。這不是支持。"}
+];
+
+const MAP = [
+ "11111111111111",
+ "10000010000001",
+ "10110010110101",
+ "10100000000101",
+ "10101101101101",
+ "10000100100001",
+ "10110100101101",
+ "10000000000001",
+ "10110100101101",
+ "10000100100001",
+ "10101101101101",
+ "10100000000101",
+ "10110010110101",
+ "10000010000001",
+ "11111111111111"
+].map(r=>r.split("").map(Number));
+const R=MAP.length, C=MAP[0].length;
+const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+const CELL=cv.width/C, OFF=(cv.height-CELL*R)/2;
+const HOME={r:7,c:6};
+
+const open=(r,c)=> r>=0&&c>=0&&r<R&&c<C&&MAP[r][c]===0;
+const px=c=>c*CELL+CELL/2, py=r=>OFF+r*CELL+CELL/2;
+
+let P, goods, risks, bag, deployed, score, part, energy, timeLeft, running, msgT, logGood, logRisk, last, pulses;
+
+function freeCells(){
+  const o=[];
+  for(let r=0;r<R;r++) for(let c=0;c<C;c++)
+    if(MAP[r][c]===0 && !(r===HOME.r&&c===HOME.c)) o.push({r,c});
+  return o;
+}
+function startGame(){
+  const cells=freeCells().sort(()=>Math.random()-0.5);
+  goods = GOODS.map((g,i)=>({...g, r:cells[i].r, c:cells[i].c, done:false, held:false}));
+  risks = RISKS.map((x,i)=>{
+    const p=cells[GOODS.length+3+i];
+    return {...x, r:p.r, c:p.c, dr:0, dc:1, spd:1.7+Math.random()*0.4};
+  });
+  P={ r:1, c:1, dr:0, dc:0, ndr:0, ndc:0, spd:4.2, mouth:0 };
+  bag=[]; deployed=0; score=0; part=60; energy=100; timeLeft=45; running=true;
+  logGood=[]; logRisk=[]; pulses=[];
+  document.getElementById("intro").classList.add("hide");
+  document.getElementById("game").classList.remove("hide");
+  drawBag(); hud();
+  clearInterval(window._clock);
+  window._clock=setInterval(()=>{ if(!running) return; timeLeft--; if(timeLeft<=0) finish("時間到"); hud(); }, 2000);
+  last=performance.now();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- 連續移動（走道式，轉彎在路口生效） ---------- */
+function setDir(dc,dr){ if(!running) return; P.ndr=dr; P.ndc=dc; }
+function atCenter(e){
+  return Math.abs(e.r-Math.round(e.r))<0.12 && Math.abs(e.c-Math.round(e.c))<0.12;
+}
+function step(e, dt){
+  const r=Math.round(e.r), c=Math.round(e.c);
+  const near = Math.abs(e.r-r)<0.18 && Math.abs(e.c-c)<0.18;
+  if(near){
+    // 轉彎只在路口生效，而且只有真的換方向時才對齊格子
+    if(e.ndr!==undefined && (e.ndr||e.ndc) && (e.ndr!==e.dr || e.ndc!==e.dc) && open(r+e.ndr, c+e.ndc)){
+      e.dr=e.ndr; e.dc=e.ndc; e.r=r; e.c=c;
+    }
+    // 前方是牆就停下
+    if(!open(r+e.dr, c+e.dc)){ e.dr=0; e.dc=0; e.r=r; e.c=c; }
+  }
+  e.r += e.dr*e.spd*dt;
+  e.c += e.dc*e.spd*dt;
+}
+function riskThink(x){
+  const r=Math.round(x.r), c=Math.round(x.c);
+  if(!(Math.abs(x.r-r)<0.18 && Math.abs(x.c-c)<0.18)) return;
+  if(x.lastR===r && x.lastC===c) return;   // 同一個路口只決定一次
+  x.lastR=r; x.lastC=c; x.r=r; x.c=c;
+  const opts=[[0,1],[0,-1],[1,0],[-1,0]].filter(([dr,dc])=>open(r+dr,c+dc) && !(dr===-x.dr && dc===-x.dc));
+  if(!opts.length){ x.dr*=-1; x.dc*=-1; return; }
+  const distToP = Math.abs(r-P.r)+Math.abs(c-P.c);
+  opts.sort((a,b)=>{
+    const da=Math.abs(r+a[0]-P.r)+Math.abs(c+a[1]-P.c);
+    const db=Math.abs(r+b[0]-P.r)+Math.abs(c+b[1]-P.c);
+    return da-db;
+  });
+  // 只有靠近時才會追，而且大多時候仍是亂走：黏度低，才有繞開的空間
+  const chase = distToP<=4 ? 0.3 : 0.05;
+  const pick = Math.random()<chase ? opts[0] : opts[Math.floor(Math.random()*opts.length)];
+  x.dr=pick[0]; x.dc=pick[1];
+}
+
+function loop(t){
+  if(!running) return;
+  const dt=Math.min(0.05,(t-last)/1000); last=t;
+  step(P, dt);
+  if(P.dr||P.dc){ energy -= 1.6*dt; P.mouth += dt*10; }
+  risks.forEach(x=>{ riskThink(x); step(x, dt); });
+
+  // 撿調整
+  goods.forEach(g=>{
+    if(g.done||g.held) return;
+    if(Math.hypot(g.r-P.r, g.c-P.c) < 0.55){
+      if(bag.length>=3){ say("手上滿了，先回體育課部署"); return; }
+      g.held=true; bag.push(g); drawBag(); pulse(g.r,g.c,"#4ade80");
+      say("撿到："+g.n, "var(--ok)"); score+=20;
+    }
+  });
+  // 撞到風險
+  risks.forEach(x=>{
+    if(Math.hypot(x.r-P.r, x.c-P.c) < 0.62 && !x.cool){
+      part-=12; energy-=8; score-=40; logRisk.push(x);
+      say("踩到：「"+x.n+"」（參與度 −12）", "var(--no)");
+      pulse(P.r,P.c,"#f87171");
+      x.cool=true; setTimeout(()=>{ x.cool=false; }, 1200);
+      // 風險彈開
+      const cells=freeCells().filter(cc=>Math.abs(cc.r-P.r)+Math.abs(cc.c-P.c)>5);
+      const p=cells[Math.floor(Math.random()*cells.length)];
+      x.r=p.r; x.c=p.c;
+    }
+  });
+  // 回到體育課
+  if(bag.length && Math.hypot(HOME.r-P.r, HOME.c-P.c) < 0.6){
+    bag.forEach(g=>{ g.done=true; g.held=false; deployed++; part+=9; score+=120; logGood.push(g); });
+    pulse(HOME.r,HOME.c,"#4ade80");
+    say("部署 "+bag.length+" 項調整，參與度上升", "var(--ok)");
+    bag=[]; drawBag();
+    if(deployed>=GOODS.length) finish("六項調整全部落地");
+  }
+  hud(); draw();
+  requestAnimationFrame(loop);
+}
+
+function hud(){
+  part=Math.max(0,Math.min(100,part)); energy=Math.max(0,Math.min(100,energy));
+  document.getElementById("time").textContent=Math.max(0,timeLeft);
+  document.getElementById("deployed").textContent=deployed;
+  document.getElementById("score").textContent=Math.round(score);
+  document.getElementById("pTxt").textContent=Math.round(part);
+  document.getElementById("eTxt").textContent=Math.round(energy);
+  const pb=document.getElementById("pBar"), eb=document.getElementById("eBar");
+  pb.style.width=part+"%";
+  pb.style.background= part>=60?"var(--ok)":(part>=35?"var(--warn)":"var(--no)");
+  eb.style.width=energy+"%";
+  eb.style.background= energy>=40?"var(--blue)":"var(--no)";
+  if(energy<=0) finish("你撐不住了");
+  if(part<=0) finish("這一班散掉了");
+}
+function say(t,color){
+  const m=document.getElementById("msg");
+  m.textContent=t; m.style.color=color||"var(--warn)";
+  clearTimeout(msgT); msgT=setTimeout(()=>{ m.textContent=""; },2200);
+}
+function drawBag(){
+  document.getElementById("bag").innerHTML=[0,1,2].map(i=>{
+    const g=bag[i];
+    return `<div class="slot${g?" full":""}">${g?g.n:"空位"}</div>`;
+  }).join("");
+}
+function pulse(r,c,col){ pulses.push({r,c,col,t:0}); }
+
+/* ---------- 繪圖 ---------- */
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  // 牆
+  for(let r=0;r<R;r++) for(let c=0;c<C;c++){
+    if(MAP[r][c]===1){
+      const g=ctx.createLinearGradient(c*CELL, OFF+r*CELL, (c+1)*CELL, OFF+(r+1)*CELL);
+      g.addColorStop(0,"#1c2839"); g.addColorStop(1,"#141d29");
+      ctx.fillStyle=g;
+      roundRect(c*CELL+1.5, OFF+r*CELL+1.5, CELL-3, CELL-3, 5); ctx.fill();
+    }
+  }
+  // 體育課
+  const hx=px(HOME.c), hy=py(HOME.r), t=performance.now()/600;
+  ctx.save();
+  ctx.shadowColor="#4ade80"; ctx.shadowBlur=12+Math.sin(t)*6;
+  ctx.fillStyle="#0f3b34"; ctx.strokeStyle="#4ade80"; ctx.lineWidth=2;
+  roundRect(hx-CELL*0.42, hy-CELL*0.42, CELL*0.84, CELL*0.84, 6); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle="#8ef0c0"; ctx.font="bold 12px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("課", hx, hy);
+
+  // 調整策略（圖示＋名稱）
+  goods.filter(g=>!g.done&&!g.held).forEach(g=>{
+    const x=px(g.c), y=py(g.r), bob=Math.sin(t*2+g.c)*1.6;
+    ctx.save();
+    ctx.shadowColor="#4ade80"; ctx.shadowBlur=10;
+    ctx.fillStyle="rgba(74,222,128,.13)"; ctx.strokeStyle="#4ade80"; ctx.lineWidth=1.4;
+    roundRect(x-CELL*0.36, y-CELL*0.36+bob, CELL*0.72, CELL*0.72, 8); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    ctx.font=`${CELL*0.42}px system-ui,"Segoe UI Emoji","Noto Color Emoji"`;
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(g.ico, x, y+bob-1);
+    ctx.font="bold 8.5px 'Microsoft JhengHei',sans-serif";
+    ctx.fillStyle="#7fe0a6";
+    ctx.fillText(g.n, x, y+CELL*0.52+bob);
+  });
+
+  // 風險（圖示＋名稱）
+  risks.forEach(x=>{
+    const gx=px(x.c), gy=py(x.r), wob=Math.sin(t*3+x.c)*1.4;
+    ctx.save();
+    ctx.shadowColor="#f87171"; ctx.shadowBlur=10;
+    ctx.fillStyle="rgba(248,113,113,.16)"; ctx.strokeStyle="#f87171"; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(gx, gy+wob, CELL*0.36, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    ctx.font=`${CELL*0.4}px system-ui,"Segoe UI Emoji","Noto Color Emoji"`;
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(x.ico, gx, gy+wob-1);
+    ctx.font="bold 8.5px 'Microsoft JhengHei',sans-serif";
+    ctx.fillStyle="#f4a3a3";
+    ctx.fillText(x.n, gx, gy+CELL*0.54+wob);
+  });
+
+  // 老師（張嘴動畫）
+  const mx=px(P.c), my=py(P.r);
+  const ang=Math.atan2(P.dr, P.dc);
+  const mouth=(P.dr||P.dc) ? Math.abs(Math.sin(P.mouth))*0.28 : 0.12;
+  ctx.save();
+  ctx.translate(mx,my); ctx.rotate(ang);
+  ctx.shadowColor="#38bdf8"; ctx.shadowBlur=12;
+  ctx.fillStyle="#38bdf8";
+  ctx.beginPath();
+  ctx.arc(0,0,CELL*0.34, mouth*Math.PI, (2-mouth)*Math.PI);
+  ctx.lineTo(0,0); ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  // 特效
+  pulses.forEach(p=>{ p.t+=0.05; });
+  pulses=pulses.filter(p=>p.t<1);
+  pulses.forEach(p=>{
+    ctx.strokeStyle=p.col; ctx.globalAlpha=1-p.t; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(px(p.c),py(p.r), CELL*(0.3+p.t*0.8), 0, 7); ctx.stroke();
+    ctx.globalAlpha=1;
+  });
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
